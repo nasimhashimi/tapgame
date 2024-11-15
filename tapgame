@@ -1,0 +1,134 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Coins, ArrowUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+export default function CoinTapperGame() {
+  const [coins, setCoins] = useState(0)
+  const [coinsPerTap, setCoinsPerTap] = useState(1)
+  const [coinsPerSecond, setCoinsPerSecond] = useState(0)
+  const [tapPowerUpgradeCost, setTapPowerUpgradeCost] = useState(10)
+  const [passiveIncomeCost, setPassiveIncomeCost] = useState(50)
+  const [tasks, setTasks] = useState([
+    { id: 1, description: 'Tap 50 times', goal: 50, progress: 0, reward: 20 },
+    { id: 2, description: 'Earn 100 coins', goal: 100, progress: 0, reward: 50 },
+    { id: 3, description: 'Buy 3 upgrades', goal: 3, progress: 0, reward: 100 },
+  ])
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCoins((prevCoins) => prevCoins + coinsPerSecond)
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [coinsPerSecond])
+
+  const handleTap = () => {
+    setCoins((prevCoins) => prevCoins + coinsPerTap)
+    updateTaskProgress(0, 1) // Update tapping task
+    updateTaskProgress(1, coinsPerTap) // Update coin earning task
+  }
+
+  const updateTaskProgress = (taskIndex: number, amount: number) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task, index) =>
+        index === taskIndex
+          ? {
+              ...task,
+              progress: Math.min(task.progress + amount, task.goal),
+            }
+          : task
+      )
+    )
+  }
+
+  const upgradeTapPower = () => {
+    if (coins >= tapPowerUpgradeCost) {
+      setCoins((prevCoins) => prevCoins - tapPowerUpgradeCost)
+      setCoinsPerTap((prevPower) => prevPower + 1)
+      setTapPowerUpgradeCost((prevCost) => Math.floor(prevCost * 1.5))
+      updateTaskProgress(2, 1) // Update upgrade task
+    }
+  }
+
+  const upgradePassiveIncome = () => {
+    if (coins >= passiveIncomeCost) {
+      setCoins((prevCoins) => prevCoins - passiveIncomeCost)
+      setCoinsPerSecond((prevIncome) => prevIncome + 1)
+      setPassiveIncomeCost((prevCost) => Math.floor(prevCost * 2))
+      updateTaskProgress(2, 1) // Update upgrade task
+    }
+  }
+
+  const claimReward = (taskId: number, reward: number) => {
+    setCoins((prevCoins) => prevCoins + reward)
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId ? { ...task, progress: 0, goal: Math.floor(task.goal * 1.5), reward: Math.floor(task.reward * 1.5) } : task
+      )
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-blue-200 p-4">
+      <h1 className="text-4xl font-bold mb-8 text-blue-800">Coin Tapper Game</h1>
+      <div className="text-2xl font-semibold mb-4 text-yellow-600">
+        <Coins className="inline-block mr-2" />
+        {coins.toFixed(0)} coins
+      </div>
+      <div className="mb-4 text-blue-600">
+        {coinsPerTap} coins per tap | {coinsPerSecond} coins per second
+      </div>
+      <button
+        className="bg-yellow-400 hover:bg-yellow-500 text-yellow-800 font-bold py-4 px-8 rounded-full shadow-lg transform transition-transform duration-100 active:scale-95 mb-8"
+        onClick={handleTap}
+      >
+        <Coins className="inline-block mr-2" size={32} />
+        Tap to Earn!
+      </button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Upgrades</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={upgradeTapPower} disabled={coins < tapPowerUpgradeCost} className="w-full">
+              <ArrowUp className="mr-2" />
+              Upgrade Tap Power (Cost: {tapPowerUpgradeCost})
+            </Button>
+            <Button onClick={upgradePassiveIncome} disabled={coins < passiveIncomeCost} className="w-full">
+              <ArrowUp className="mr-2" />
+              Upgrade Passive Income (Cost: {passiveIncomeCost})
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Tasks</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {tasks.map((task) => (
+              <div key={task.id} className="space-y-2">
+                <div className="flex justify-between">
+                  <span>{task.description}</span>
+                  <span>
+                    {task.progress}/{task.goal}
+                  </span>
+                </div>
+                <Progress value={(task.progress / task.goal) * 100} />
+                {task.progress >= task.goal && (
+                  <Button onClick={() => claimReward(task.id, task.reward)} className="w-full">
+                    Claim {task.reward} coins
+                  </Button>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}Initial commit of Coin Tapper Game
